@@ -1,0 +1,22 @@
+<collection xmlns="http://exist-db.org/collection-config/1.0">
+    <index xmlns:xs="http://www.w3.org/2001/XMLSchema">
+        <fulltext default="none" attributes="false"/>
+        <range>
+            <create qname="source-id" type="xs:string"/>
+            <!--
+            <create qname="when" type="xs:string"/>
+            <create qname="from" type="xs:string"/>
+            <create qname="to" type="xs:string"/>
+            <create qname="notBefore" type="xs:string"/>
+            <create qname="notAfter" type="xs:string"/>
+            -->
+            <!--
+            <create qname="@utc" type="xs:dateTime"/>
+            -->
+            <create qname="date-entry">
+                <field name="date-min" match="date-min/@utc" type="xs:dateTime"/>
+                <field name="date-max" match="date-max/@utc" type="xs:dateTime"/>
+            </create>
+        </range>
+    </index>
+</collection>
