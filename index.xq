@@ -96,7 +96,7 @@ let $end :=
         ()
 let $hits :=
     if (exists($start) and exists($end)) then
-        for $hit in collection('/db/frus-dates/data')//date-entry[date-min/@utc ge $start and date-max/@utc le $end]
+        for $hit in collection('/db/apps/frus-dates/data')//date-entry[date-min/@utc ge $start and date-max/@utc le $end]
         let $sort := $hit/date-min/@utc
         order by $sort
         return $hit
