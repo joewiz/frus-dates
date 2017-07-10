@@ -106,7 +106,7 @@ let $query-end := util:system-time()
 let $query-duration := ($query-end - $query-start) div xs:dayTimeDuration("PT1S") || "s"
 let $content := 
     <div>
-        <p>The FRUS repository contains {format-number($doc-count, "#,###.##")} documents, {format-number($dated-doc-count, "#,###.##")} of which have dates. 
+        <p>As of {format-dateTime(doc('/db/apps/frus-dates/data/frus-dates.xml')/date-entries/created-dateTime, '[MNn] [D], [Y0001]', 'en', (), 'US')}, the <em>FRUS</em> digital archive contains {format-number($doc-count, "#,###.##")} documents, {format-number($dated-doc-count, "#,###.##")} of which have dates. 
             (Thus, {format-number($doc-count - $dated-doc-count, "#,###.##")} do not have dates; of these, some are editorial notes, others are undated documents whose dates are still being researched.)
             This app is a demonstration of the kinds of queries we can perform on these dates.
         </p>
