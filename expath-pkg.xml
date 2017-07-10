@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://expath.org/ns/pkg" name="http://history.state.gov/ns/pkg/apps/frus-dates" abbrev="frus-dates" version="0.1" spec="1.0">
+    <title>FRUS Dates</title>
+    <dependency package="http://www.functx.com" version="1.0"/>
+    <dependency processor="http://exist-db.org" semver-min="3.0.4"/>
+</package>

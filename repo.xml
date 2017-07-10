@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<meta xmlns="http://exist-db.org/xquery/repo">
+    <description>FRUS Dates</description>
+    <author/>
+    <website/>
+    <status>alpha</status>
+    <license>GNU-LGPL</license>
+    <copyright>true</copyright>
+    <type>application</type>
+    <target>frus-dates</target>
+    <prepare>pre-install.xql</prepare>
+    <finish/>
+    <permissions user="hsg" group="hsg" password="" mode="rw-rw-r--"/>
+</meta>
