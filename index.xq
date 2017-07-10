@@ -1,6 +1,6 @@
 xquery version "3.1";
 
-import module namespace functx="http://www.functx.com" at "/db/system/repo/functx-1.0/functx/functx.xql";
+import module namespace functx="http://www.functx.com";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei="http://www.tei-c.org/ns/1.0";
@@ -8,7 +8,7 @@ declare namespace tei="http://www.tei-c.org/ns/1.0";
 declare option output:method "html5";
 declare option output:media-type "text/html";
 
-declare variable $local:app-base := "/exist/apps/frus-dates/index.xq";
+declare variable $local:app-base := "/exist/apps/frus-dates/";
 
 
 declare function local:normalize-low($date as xs:string, $timezone as xs:dayTimeDuration) {
@@ -135,7 +135,7 @@ let $content :=
                 (
                 <hr/>,
                 <div>
-                    <p>Search completed in {$query-duration}. Showing 1-{format-number(count($hits-to-show), "#,###.##")} of {format-number(count($hits), "#,###.##")} documents matching search dated between {$start} and {$end} (duration: {$end - $start}):</p>
+                    <p>Search completed in {$query-duration}. Showing 1-{format-number(count($hits-to-show), "#,###.##")} of {format-number(count($hits), "#,###.##")} documents matching search dated between <code>{$start}</code> and <code>{$end}</code> (duration: {$end - $start}):</p>
                     <ol>
                         {
                             for $hit in $hits-to-show
