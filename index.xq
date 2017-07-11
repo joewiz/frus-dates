@@ -85,7 +85,13 @@ let $date := request:get-parameter("date", ())
 let $start-date := request:get-parameter("start-date", ())
 let $end-date := request:get-parameter("end-date", ())
 let $query-start := util:system-time()
-let $timezone := xs:dayTimeDuration("PT0H")
+let $timezone := 
+    (: We want to assume times supplied in a query are US Eastern, unless otherwise specified. 
+       The UTC offset for US Eastern changes depending on daylight savings time.
+       We could use fn:implicit-timezone(), but this depends upon the query context, which is set by the system/environment.
+       On the hsg production servers, this function returns +00:00, or UTC. 
+       So the following is a kludge to determine the UTC offset for US Eastern, sensitive to daylight savings time. :)
+    functx:duration-from-timezone(fn:format-dateTime(current-dateTime(), "[Z]", (), (), "America/New_York"))
 let $start := 
     if ($date ne "") then
         $date => local:normalize-low($timezone)
@@ -116,8 +122,8 @@ let $content :=
             (Thus, {format-number($doc-count - $dated-doc-count, "#,###.##")} do not have dates; of these, some are editorial notes, others are undated documents whose dates are still being researched.)
             This app is a demonstration of the kinds of queries we can perform on these dates.
         </p>
-        <p>To get started, try an example query: <a href="?date=1941">1941</a>; <a href="?date=1941-12">December 1941</a>; <a href="?date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1968-11-05&amp;end-date=1969-01-20">the period between the election and inauguration of Richard Nixon</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; and <a href="?start-date=1974-08-09T10:00:00&amp;end-date=1974-08-09T20:00:00">August 8, 1974, 10 a.m.–8 p.m.</a></p>
-        <p>To craft your own query, enter either a single date or a date range. A future version will add a calendar widget, but for now, use the following date format: <code>YYYY</code>, <code>YYYY-MM</code>, <code>YYYY-MM-DD</code>. Times can be added too, appending <code>T</code> followed by the time <code>HH:MM:SS</code> and optional time zone <code>Z</code> or <code>±HH:MM</code>. For example, <code>1945-08-15T20:00:00</code> describes August 15, 1945 at 8 p.m.</p>
+        <p>To get started, try one of the following example queries: <a href="?date=1941">1941</a>; <a href="?date=1941-12">December 1941</a>; <a href="?date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1968-11-05&amp;end-date=1969-01-20">the period between the election and inauguration of Richard Nixon</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; and <a href="?start-date=1974-08-09T10:00:00&amp;end-date=1974-08-09T20:00:00">August 9, 1974, 10 a.m.–8 p.m.</a></p>
+        <p>To craft your own query, enter either a single date or a date range. A future version will add a calendar widget, but for now, use the following date format: <code>YYYY</code>, <code>YYYY-MM</code>, <code>YYYY-MM-DD</code>. Times can be added too, appending <code>T</code> followed by the time <code>HH:MM:SS</code> and optional time zone <code>Z</code> or <code>±HH:MM</code>. Unless otherwise specified, your query is assumed to be in US Eastern time, though you may experience some slight timezone misalignment in cases when our conversion vendor didn’t complete UTC offsets for dates, a deficiency we plan to correct. For example, <code>1945-08-15T20:00:00</code> describes August 15, 1945 at 8 p.m. US Eastern, whereas <code>1945-08-15T20:00:00Z</code> is 8 p.m. UTC, or 3 or 4 p.m. US Eastern depending on daylight savings time.</p>
         <form class="form-inline" action="{$local:app-base}" method="get">
             <div class="form-group">
                 <label for="date" class="control-label">Date</label>
