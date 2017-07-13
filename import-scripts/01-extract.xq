@@ -9,11 +9,14 @@ declare function local:process($docs, $vol-id, $counter) {
         let $log := if ($counter mod 100 = 0) then console:log($vol-id || ": starting doc " || $counter) else ()
         let $doc := head($docs)
         let $doc-id := $doc/@xml:id
-        let $date := ($doc//tei:date)[1]
+        let $dateline := ($doc//tei:dateline[.//tei:date])[1]
+        let $date := ($dateline//tei:date)[1]
+        let $placeName := ($doc//tei:placeName)[1]
         let $entry := 
             <date-entry>
                 <source-id>frus:{$vol-id/string()}/{$doc-id/string()}</source-id>
-                <original-text>{$date//text()[not(./ancestor::tei:note)] ! normalize-space(string-join(.))}</original-text>
+                <source-date>{$date//text()[not(./ancestor::tei:note)] ! normalize-space(string-join(.))}</source-date>
+                <placeName>{$placeName//text()[not(./ancestor::tei:note)] ! normalize-space(string-join(.))}</placeName>
                 <when>{$date/@when/string()}</when>
                 <from>{$date/@from/string()}</from>
                 <to>{$date/@to/string()}</to>
@@ -44,7 +47,7 @@ let $create :=
     )
 
 for $vol in collection('/db/apps/frus/volumes')
-let $docs := $vol//tei:div[@type eq 'document'][.//tei:date]
+let $docs := $vol//tei:div[@type eq 'document']
 let $vol-id := $vol/tei:TEI/@xml:id
 let $create := xmldb:create-collection($dates-import-col, $vol-id)
 return

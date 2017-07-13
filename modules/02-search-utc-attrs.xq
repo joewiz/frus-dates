@@ -1,38 +1,7 @@
 xquery version "3.1";
 
-import module namespace functx="http://www.functx.com" at "/db/system/repo/functx-1.0/functx/functx.xql";
-
-declare function local:normalize-low($date as xs:string, $timezone as xs:dayTimeDuration) {
-    let $dateTime :=
-        if ($date castable as xs:dateTime) then 
-            adjust-dateTime-to-timezone(xs:dateTime($date), $timezone)
-        else if ($date castable as xs:date) then
-            let $adjusted-date := adjust-date-to-timezone(xs:date($date), $timezone)
-            return
-                substring($adjusted-date, 1, 10) || 'T00:00:00' || substring($adjusted-date, 11)
-        else if (matches($date, '^\d{4}-\d{2}$')) then
-            adjust-dateTime-to-timezone(xs:dateTime($date || '-01T00:00:00'), $timezone)
-        else (: if (matches($e, '^\d{4}$')) then :)
-            adjust-dateTime-to-timezone(xs:dateTime($date || '-01-01T00:00:00'), $timezone)
-    return
-        $dateTime cast as xs:dateTime
-};
-
-declare function local:normalize-high($date as xs:string, $timezone as xs:dayTimeDuration) as xs:dateTime {
-    let $dateTime :=
-        if ($date castable as xs:dateTime) then 
-            adjust-dateTime-to-timezone(xs:dateTime($date), $timezone)
-        else if ($date castable as xs:date) then
-            let $adjusted-date := adjust-date-to-timezone(xs:date($date), $timezone)
-            return
-                substring($adjusted-date, 1, 10) || 'T23:59:59' || substring($adjusted-date, 11)
-        else if (matches($date, '^\d{4}-\d{2}$')) then
-            adjust-dateTime-to-timezone(xs:dateTime($date || '-' || functx:days-in-month($date || '-01') || 'T23:59:59'), $timezone)
-        else (: if (matches($e, '^\d{4}$')) then :)
-            adjust-dateTime-to-timezone(xs:dateTime($date || '-' || functx:days-in-month($date || '-12-01') || 'T23:59:59'), $timezone)
-    return
-        $dateTime cast as xs:dateTime
-};
+import module namespace fd="http://history.state.gov/ns/site/hsg/frus-dates" at "../modules/frus-dates.xqm";
+import module namespace functx="http://www.functx.com";
 
 let $query-start := util:system-time()
 let $timezone := xs:dayTimeDuration('PT0H')
@@ -41,13 +10,13 @@ let $start :=
     (:
     '1934-03'
     :)
-    => local:normalize-low($timezone)
+    => fd:normalize-low($timezone)
 let $end := 
     '1945-08-15' 
     (:
     '1934-03'
     :)
-    => local:normalize-high($timezone)
+    => fd:normalize-high($timezone)
 let $hits :=
     for $hit in collection('/db/apps/frus-dates/data')//date-entry
         [

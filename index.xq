@@ -1,5 +1,6 @@
 xquery version "3.1";
 
+import module namespace fd="http://history.state.gov/ns/site/hsg/frus-dates" at "modules/frus-dates.xqm";
 import module namespace functx="http://www.functx.com";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
@@ -8,79 +9,9 @@ declare namespace tei="http://www.tei-c.org/ns/1.0";
 declare option output:method "html5";
 declare option output:media-type "text/html";
 
-declare variable $local:app-base := "/exist/apps/frus-dates/";
-
-
-declare function local:normalize-low($date as xs:string, $timezone as xs:dayTimeDuration) {
-    let $dateTime :=
-        if ($date castable as xs:dateTime) then 
-            adjust-dateTime-to-timezone(xs:dateTime($date), $timezone)
-        else if ($date castable as xs:date) then
-            let $adjusted-date := adjust-date-to-timezone(xs:date($date), $timezone)
-            return
-                substring($adjusted-date, 1, 10) || 'T00:00:00' || substring($adjusted-date, 11)
-        else if (matches($date, '^\d{4}-\d{2}$')) then
-            adjust-dateTime-to-timezone(xs:dateTime($date || '-01T00:00:00'), $timezone)
-        else (: if (matches($date, '^\d{4}$')) then :)
-            adjust-dateTime-to-timezone(xs:dateTime($date || '-01-01T00:00:00'), $timezone)
-    return
-        $dateTime cast as xs:dateTime
-};
-
-declare function local:normalize-high($date as xs:string, $timezone as xs:dayTimeDuration) as xs:dateTime {
-    let $dateTime :=
-        if ($date castable as xs:dateTime) then 
-            adjust-dateTime-to-timezone(xs:dateTime($date), $timezone)
-        else if ($date castable as xs:date) then
-            let $adjusted-date := adjust-date-to-timezone(xs:date($date), $timezone)
-            return
-                substring($adjusted-date, 1, 10) || 'T23:59:59' || substring($adjusted-date, 11)
-        else if (matches($date, '^\d{4}-\d{2}$')) then
-            adjust-dateTime-to-timezone(xs:dateTime($date || '-' || functx:days-in-month($date || '-01') || 'T23:59:59'), $timezone)
-        else (: if (matches($date, '^\d{4}$')) then :)
-            adjust-dateTime-to-timezone(xs:dateTime($date || '-12-31T23:59:59'), $timezone)
-    return
-        $dateTime cast as xs:dateTime
-};
-
-declare function local:wrap-html($content as element(), $title as xs:string+) {
-    <html>
-        <head>
-            <meta charset="utf-8"/>
-            <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-            <meta name="viewport" content="width=device-width, initial-scale=1"/>
-            <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-            
-            <title>{string-join(reverse($title), ' | ')}</title>
-            
-            <!-- Latest compiled and minified CSS -->
-            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"/>
-
-            <!-- Optional theme -->
-            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous"/>
-            
-            <!-- Latest compiled and minified JavaScript -->
-            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"/>
-            <style type="text/css">
-                table {{ page-break-inside: avoid }}
-            </style>
-            <style type="text/css" media="print">
-                a, a:visited {{ text-decoration: underline; color: #428bca; }}
-                a[href]:after {{ content: "" }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h3><a href="{$local:app-base}">{$title[1]}</a></h3>
-                {$content}
-            </div>
-        </body>
-    </html>    
-};
-
 let $title := "FRUS Dates Proof of Concept"
-let $doc-count := 233686 (: count(collection("/db/apps/frus/volumes")//tei:div[@type="document"]) :)
-let $dated-doc-count := 222534 (: count(collection("/db/apps/frus-dates/data")//date-min[@utc]) :)
+let $doc-count := count(collection("/db/apps/frus/volumes")//tei:div[@type="document"])
+let $dated-doc-count := count(collection("/db/apps/frus-dates/data")//date-min[@utc])
 let $date := request:get-parameter("date", ())
 let $start-date := request:get-parameter("start-date", ())
 let $end-date := request:get-parameter("end-date", ())
@@ -94,16 +25,16 @@ let $timezone :=
     functx:duration-from-timezone(fn:format-dateTime(current-dateTime(), "[Z]", (), (), "America/New_York"))
 let $start := 
     if ($date ne "") then
-        $date => local:normalize-low($timezone)
+        $date => fd:normalize-low($timezone)
     else if ($start-date ne "") then
-        $start-date => local:normalize-low($timezone)
+        $start-date => fd:normalize-low($timezone)
     else
         ()
 let $end := 
     if ($date ne "") then
-        $date => local:normalize-high($timezone)
+        $date => fd:normalize-high($timezone)
     else if ($end-date ne "") then
-        $end-date => local:normalize-high($timezone)
+        $end-date => fd:normalize-high($timezone)
     else
         ()
 let $hits :=
@@ -124,7 +55,7 @@ let $content :=
         </p>
         <p>To get started, try one of the following example queries: <a href="?date=1941">1941</a>; <a href="?date=1941-12">December 1941</a>; <a href="?date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1968-11-05&amp;end-date=1969-01-20">the period between the election and inauguration of Richard Nixon</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; and <a href="?start-date=1974-08-09T10:00:00&amp;end-date=1974-08-09T20:00:00">August 9, 1974, 10 a.m.–8 p.m.</a></p>
         <p>To craft your own query, enter either a single date or a date range. A future version will add a calendar widget, but for now, use the following date format: <code>YYYY</code>, <code>YYYY-MM</code>, <code>YYYY-MM-DD</code>. Times can be added too, appending <code>T</code> followed by the time <code>HH:MM:SS</code> and optional time zone <code>Z</code> or <code>±HH:MM</code>. Unless otherwise specified, your query is assumed to be in US Eastern time, though you may experience some slight timezone misalignment in cases when our conversion vendor didn’t complete UTC offsets for dates, a deficiency we plan to correct. For example, <code>1945-08-15T20:00:00</code> describes August 15, 1945 at 8 p.m. US Eastern, whereas <code>1945-08-15T20:00:00Z</code> is 8 p.m. UTC, or 3 or 4 p.m. US Eastern depending on daylight savings time.</p>
-        <form class="form-inline" action="{$local:app-base}" method="get">
+        <form class="form-inline" action="{$fd:app-base}" method="get">
             <div class="form-group">
                 <label for="date" class="control-label">Date</label>
                 <input type="text" name="date" id="date" class="form-control" value="{$date}"/>
@@ -140,7 +71,7 @@ let $content :=
             </div>
             <br/>
             <button type="submit" class="btn btn-default">Submit</button>
-            <a type="button" href="{$local:app-base}" class="btn btn-default">Clear</a>
+            <a type="button" href="{$fd:app-base}" class="btn btn-default">Clear</a>
         </form>
         {
             if ($hits) then
@@ -165,4 +96,4 @@ let $content :=
         }
     </div>
 return
-    local:wrap-html($content, $title)
+    fd:wrap-html($content, $title)
