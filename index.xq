@@ -1,7 +1,7 @@
 xquery version "3.1";
 
 import module namespace console="http://exist-db.org/xquery/console";
-import module namespace fd="http://history.state.gov/ns/site/hsg/frus-dates" at "modules/frus-dates.xqm";
+import module namespace fd="http://history.state.gov/ns/site/hsg/frus-dates" at "/db/apps/frus-dates/modules/frus-dates.xqm";
 import module namespace functx="http://www.functx.com";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
@@ -39,6 +39,9 @@ let $range-end :=
     if ($end-date ne "") then
         ($end-date || (if ($end-time ne "") then ("T" || $end-time) else ()))
             => fd:normalize-high($timezone)
+    else if ($start-date ne "") then
+        ($start-date || (if ($start-time ne "") then ("T" || $start-time) else ()))
+            => fd:normalize-high($timezone)
     else
         ()
 let $log := console:log("starting search for " || " start-date=" || $start-date || " (range-start=" || $range-start || ") end-date=" || $end-date || " (range-end=" || $range-end || ") q=" || $q)
@@ -51,17 +54,30 @@ let $hits :=
         collection("/db/apps/frus/volumes")//tei:div[ft:query(., $q)]
     else 
         ()
+let $ordered-hits := 
+    for $doc in $hits
+    order by $doc/@frus:doc-dateTime-min
+    return $doc
 let $query-end := util:system-time()
 let $query-duration := ($query-end - $query-start) div xs:dayTimeDuration("PT1S") || "s"
 let $end := $start + $per-page - 1
-let $hits-to-show := subsequence($hits, $start, $per-page)
+let $hits-to-show := subsequence($ordered-hits, $start, $per-page)
+let $link-to-next := 
+    <a href="{
+        let $url := request:get-query-string()
+        return
+            if (matches($url, "start=\d")) then
+                "?" || replace($url, "start=\d+", "start=" || $end + 1)
+            else 
+                "?" || $url || "&amp;start=" || $end + 1
+    }">Next {$per-page} results.</a>
 let $content :=
     <div>
         <p>Since its launch, the <em>FRUS</em> digital archive offered series-wide full-text search, but it lacked date-based search or chronological sorting of search results. This was a highly requested feature, but without reliable machine-readable dates, such a feature was technically infeasible. Instead, we defered this feature and focused on other goals—most importantly, completing the digitization of the print archive. Now, with over 400 of the 550+ volumes digitized in TEI XML, we now have a representative sample of the variety of document dates in <em>FRUS</em> suitable for thorough review and analysis.</p>
         <p>In October 2016 the Office’s digital initiatives team launched a project to review dates across the series. In July 2016 the project achieved a major milestone: the completion of dates in all <em>FRUS</em> volumes released before 2017. Now {format-number($dated-doc-count, "#,###.##")} of the {format-number($doc-count, "#,###.##")} documents, or {round($dated-doc-count div $doc-count * 1000) div 10}% of the archive, contain machine-readable dates in a format suitable for date-based searching and sorting. (Research on the remaining {format-number($doc-count - $dated-doc-count, "#,###.##")} documents is ongoing.) 
         Now, we are preparing to integrate this data into the history.state.gov’s search interface. This page is an early attempt at demonstrating the viability of querying the dates. Please give it a try and let us know what you think.</p>
         <p>To get started, try one of the following example queries: <a href="?start-date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; <a href="?start-date=1974-08-09&amp;start-time=10:00&amp;end-date=1974-08-09&amp;end-time=20:00">August 9, 1974, 10 a.m.–8 p.m.</a>; <a href="?start-date=1977-01-20&amp;end-date=1981-01-20&amp;q=""human+rights""">“Human Rights” during the Carter administration</a>.</p>
-        <p>To craft your own query, enter either a single date or a date range; keyword(s) can be supplied to narrow the search further. A future version will add a calendar widget, but for now, use the following date format: <code>YYYY</code>, <code>YYYY-MM</code>, <code>YYYY-MM-DD</code>. Times can be added too, appending <code>T</code> followed by the time <code>HH:MM:SS</code> and optional time zone <code>Z</code> or <code>±HH:MM</code>. For example, <code>1945-08-15T20:00:00</code> is interpreted as August 15, 1945 at 8 p.m. US Eastern, whereas <code>1945-08-15T20:00:00Z</code>, which has an explicit UTC timezone, is interpreted as 8 p.m. UTC, or 3 or 4 p.m. US Eastern depending on daylight savings time. (A note on time zones: Unless otherwise specified, your query is assumed to be in US Eastern time, though you may experience some slight timezone misalignment that we are investigating.)</p>
+        <p>To craft your own query, enter either a single date to find documents from that date, or use two dates to search for all documents between those dates (inclusive). Times can be added for more precision. (A note on time zones: Unless otherwise specified, your query is assumed to be in US Eastern time, though you may experience some slight timezone misalignment that we are investigating.)</p>
         <form class="form-inline" action="{$fd:app-base}" method="get">
             <div class="form-group">
                 <label for="date" class="control-label">Date</label>
@@ -128,14 +144,7 @@ let $content :=
                                 , 
                                 ", sorted in chronological order. "
                                 ,
-                                <a href="{
-                                    let $url := request:get-query-string()
-                                    return
-                                        if (matches($url, "start=\d")) then
-                                            "?" || replace($url, "start=\d+", "start=" || $end + 1)
-                                        else 
-                                            "?" || $url || "&amp;start=" || $end + 1
-                                }">Next {$per-page} results.</a>
+                                $link-to-next
                             )
                     }</p>
                     {
@@ -160,8 +169,6 @@ let $content :=
                         let $date-string := $date//text()[not(./ancestor::tei:note)] => string-join() => normalize-space()
                         let $placeName := ($doc//tei:placeName)[1]
                         let $placeName-string := $placeName//text()[not(./ancestor::tei:note)] => string-join() => normalize-space()
-                        let $calendar := $date/@calendar/string()
-                        let $ana := $date/@ana/string()
                         return
                             <div>
                                 <p>{$start + $n - 1}. <a href="{$vol-id || "/" || $doc-id}">{$heading-stripped}</a></p>
@@ -173,6 +180,7 @@ let $content :=
                                 </ul>
                             </div>
                     }
+                    <p>{ $link-to-next }</p>
                 </div>
                 )
             else if ($start-date or $end-date or $q) then
