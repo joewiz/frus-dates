@@ -6,15 +6,14 @@ import module namespace functx="http://www.functx.com";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace tei="http://www.tei-c.org/ns/1.0";
+declare namespace frus="http://history.state.gov/frus/ns/1.0";
 
 declare option output:method "html5";
 declare option output:media-type "text/html";
 
 let $title := "FRUS Dates Proof of Concept"
 let $doc-count := count(collection("/db/apps/frus/volumes")//tei:div[@type="document"])
-let $dated-doc-count := count(collection("/db/apps/frus/volumes")//tei:div[@type="document"][@dateTime-min])
-let $date := request:get-parameter("date", ())
-let $time := request:get-parameter("time", ())
+let $dated-doc-count := count(collection("/db/apps/frus/volumes")//tei:div[@type="document"][@frus:doc-dateTime-min])
 let $start-date := request:get-parameter("start-date", ())
 let $start-time := request:get-parameter("start-time", ())
 let $end-date := request:get-parameter("end-date", ())
@@ -31,29 +30,23 @@ let $timezone :=
        So the following is a kludge to determine the UTC offset for US Eastern, sensitive to daylight savings time. :)
     functx:duration-from-timezone(fn:format-dateTime(current-dateTime(), "[Z]", (), (), "America/New_York"))
 let $range-start := 
-    if ($date ne "") then
-        ($date || (if ($time ne "") then ("T" || $time) else ()))
-            => fd:normalize-low($timezone)
-    else if ($start-date ne "") then
+    if ($start-date ne "") then
         ($start-date || (if ($start-time ne "") then ("T" || $start-time) else ()))
             => fd:normalize-low($timezone)
     else
         ()
 let $range-end := 
-    if ($date ne "") then
-        ($date || (if ($time ne "") then ("T" || $time) else ()))
-            => fd:normalize-high($timezone)
-    else if ($end-date ne "") then
+    if ($end-date ne "") then
         ($end-date || (if ($end-time ne "") then ("T" || $end-time) else ()))
             => fd:normalize-high($timezone)
     else
         ()
-let $log := console:log("starting search for " || "date=" || $date || " start-date=" || $start-date || " (range-start=" || $range-start || ") end-date=" || $end-date || " (range-end=" || $range-end || ") q=" || $q)
+let $log := console:log("starting search for " || " start-date=" || $start-date || " (range-start=" || $range-start || ") end-date=" || $end-date || " (range-end=" || $range-end || ") q=" || $q)
 let $hits :=
     if (exists($range-start) and exists($range-end) and exists($q)) then
-        collection("/db/apps/frus/volumes")//tei:div[@dateTime-min ge $range-start and @dateTime-max le $range-end][ft:query(., $q)]
+        collection("/db/apps/frus/volumes")//tei:div[@frus:doc-dateTime-min ge $range-start and @frus:doc-dateTime-max le $range-end][ft:query(., $q)]
     else if (exists($range-start) and exists($range-end)) then
-        collection("/db/apps/frus/volumes")//tei:div[@dateTime-min ge $range-start and @dateTime-max le $range-end]
+        collection("/db/apps/frus/volumes")//tei:div[@frus:doc-dateTime-min ge $range-start and @frus:doc-dateTime-max le $range-end]
     else if (exists($q)) then
         collection("/db/apps/frus/volumes")//tei:div[ft:query(., $q)]
     else 
@@ -61,34 +54,26 @@ let $hits :=
 let $query-end := util:system-time()
 let $query-duration := ($query-end - $query-start) div xs:dayTimeDuration("PT1S") || "s"
 let $end := $start + $per-page - 1
-let $hits-to-show := subsequence($hits, $start, $per-page - 1)
+let $hits-to-show := subsequence($hits, $start, $per-page)
 let $content :=
     <div>
         <p>Since its launch, the <em>FRUS</em> digital archive offered series-wide full-text search, but it lacked date-based search or chronological sorting of search results. This was a highly requested feature, but without reliable machine-readable dates, such a feature was technically infeasible. Instead, we defered this feature and focused on other goals—most importantly, completing the digitization of the print archive. Now, with over 400 of the 550+ volumes digitized in TEI XML, we now have a representative sample of the variety of document dates in <em>FRUS</em> suitable for thorough review and analysis.</p>
         <p>In October 2016 the Office’s digital initiatives team launched a project to review dates across the series. In July 2016 the project achieved a major milestone: the completion of dates in all <em>FRUS</em> volumes released before 2017. Now {format-number($dated-doc-count, "#,###.##")} of the {format-number($doc-count, "#,###.##")} documents, or {round($dated-doc-count div $doc-count * 1000) div 10}% of the archive, contain machine-readable dates in a format suitable for date-based searching and sorting. (Research on the remaining {format-number($doc-count - $dated-doc-count, "#,###.##")} documents is ongoing.) 
         Now, we are preparing to integrate this data into the history.state.gov’s search interface. This page is an early attempt at demonstrating the viability of querying the dates. Please give it a try and let us know what you think.</p>
-        <p>To get started, try one of the following example queries: <a href="?date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; and <a href="?start-date=1974-08-09&amp;start-time=10:00&amp;end-date=1974-08-09&amp;end-time=20:00">August 9, 1974, 10 a.m.–8 p.m.</a></p>
+        <p>To get started, try one of the following example queries: <a href="?start-date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; <a href="?start-date=1974-08-09&amp;start-time=10:00&amp;end-date=1974-08-09&amp;end-time=20:00">August 9, 1974, 10 a.m.–8 p.m.</a>; <a href="?start-date=1977-01-20&amp;end-date=1981-01-20&amp;q=""human+rights""">“Human Rights” during the Carter administration</a>.</p>
         <p>To craft your own query, enter either a single date or a date range; keyword(s) can be supplied to narrow the search further. A future version will add a calendar widget, but for now, use the following date format: <code>YYYY</code>, <code>YYYY-MM</code>, <code>YYYY-MM-DD</code>. Times can be added too, appending <code>T</code> followed by the time <code>HH:MM:SS</code> and optional time zone <code>Z</code> or <code>±HH:MM</code>. For example, <code>1945-08-15T20:00:00</code> is interpreted as August 15, 1945 at 8 p.m. US Eastern, whereas <code>1945-08-15T20:00:00Z</code>, which has an explicit UTC timezone, is interpreted as 8 p.m. UTC, or 3 or 4 p.m. US Eastern depending on daylight savings time. (A note on time zones: Unless otherwise specified, your query is assumed to be in US Eastern time, though you may experience some slight timezone misalignment that we are investigating.)</p>
         <form class="form-inline" action="{$fd:app-base}" method="get">
             <div class="form-group">
                 <label for="date" class="control-label">Date</label>
-                <input type="date" name="date" id="date" class="form-control" value="{$date}"/>
-            </div>
-            <div class="form-group">
-                <label for="time" class="control-label">Time</label>
-                <input type="time" name="time" id="time" class="form-control" value="{$time}"/>
-            </div>
-            <br/>
-            <div class="form-group">
-                <label for="start-date" class="control-label">Start</label>
                 <input type="date" name="start-date" id="start-date" class="form-control" value="{$start-date}"/>
             </div>
             <div class="form-group">
-                <label for="start-time" class="control-label">Time</label>
+                <label for="time" class="control-label">Time</label>
                 <input type="time" name="start-time" id="start-time" class="form-control" value="{$start-time}"/>
             </div>
+            <br/>
             <div class="form-group">
-                <label for="end-date" class="control-label">End</label>
+                <label for="end-date" class="control-label">End (optional)</label>
                 <input type="date" name="end-date" id="end-date" class="form-control" value="{$end-date}"/>
             </div>
             <div class="form-group">
@@ -190,7 +175,7 @@ let $content :=
                     }
                 </div>
                 )
-            else if ($date or $start-date or $end-date or $q) then
+            else if ($start-date or $end-date or $q) then
                 <p>No hits found.</p>
             else 
                 ()
