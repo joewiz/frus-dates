@@ -40,4 +40,4 @@ local:check-for-errors()
 
 for $d in collection('/db/apps/frus-dates/data')//(when | from | to | notBefore | notAfter)[. ne ''][not(@utc)]
 return
-    update replace $d with fd:normalize($d)
+    update replace $d with local:normalize($d)

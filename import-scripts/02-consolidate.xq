@@ -1,5 +1,6 @@
 xquery version "3.1";
 
+let $create := xmldb:create-collection("/db/apps/frus-dates", "data")
 let $entries := 
     element date-entries { 
         element created-dateTime { current-dateTime() }, 
