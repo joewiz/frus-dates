@@ -75,28 +75,29 @@ let $content :=
     <div>
         <p>Since its launch, the <em>FRUS</em> digital archive offered series-wide full-text search, but it lacked date-based search or chronological sorting of search results. This was a highly requested feature, but without reliable machine-readable dates, such a feature was technically infeasible. Instead, we defered this feature and focused on other goals—most importantly, completing the digitization of the print archive. Now, with over 400 of the 550+ volumes digitized in TEI XML, we now have a representative sample of the variety of document dates in <em>FRUS</em> suitable for thorough review and analysis.</p>
         <p>In October 2016 the Office’s digital initiatives team launched a project to review dates across the series. In July 2016 the project achieved a major milestone: the completion of dates in all <em>FRUS</em> volumes released before 2017. Now {format-number($dated-doc-count, "#,###.##")} of the {format-number($doc-count, "#,###.##")} documents, or {round($dated-doc-count div $doc-count * 1000) div 10}% of the archive, contain machine-readable dates in a format suitable for date-based searching and sorting. (Research on the remaining {format-number($doc-count - $dated-doc-count, "#,###.##")} documents is ongoing.) 
-        Now, we are preparing to integrate this data into the history.state.gov’s search interface. This page is an early attempt at demonstrating the viability of querying the dates. Please give it a try and let us know what you think.</p>
-        <p>To get started, try one of the following example queries: <a href="?start-date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; <a href="?start-date=1974-08-09&amp;start-time=10:00&amp;end-date=1974-08-09&amp;end-time=20:00">August 9, 1974, 10 a.m.–8 p.m.</a>; <a href="?start-date=1977-01-20&amp;end-date=1981-01-20&amp;q=""human+rights""">“Human Rights” during the Carter administration</a>.</p>
-        <p>To craft your own query, enter either a single date to find documents from that date, or use two dates to search for all documents between those dates (inclusive). Times can be added for more precision. (A note on time zones: Unless otherwise specified, your query is assumed to be in US Eastern time, though you may experience some slight timezone misalignment that we are investigating.)</p>
+        Now, we are preparing to integrate this data into the history.state.gov’s search interface. This page is an early attempt at demonstrating the viability of querying the dates. Please give it a try and <a href="https://history.state.gov/about/contact-us">let us know</a> what you think.</p>
+        <p>To get started, click on one of the following example queries to see the results: <a href="?start-date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; <a href="?start-date=1974-08-09&amp;start-time=10:00&amp;end-date=1974-08-09&amp;end-time=20:00">August 9, 1974, 10 a.m.–8 p.m.</a>; <a href="?start-date=1977-01-20&amp;end-date=1981-01-20&amp;q=""human+rights""">“Human Rights” during the Carter administration</a>.</p>
+        <p>To craft your own query, enter either a single date to find documents from that date, or use two dates to search for all documents between those dates (inclusive). Times can be added for more precision. (A note on time zones: Unless otherwise specified, your query is assumed to be in US Eastern time, though you may experience some slight timezone misalignment that we are investigating.) You can also add a keyword to your search, using the same syntax as described on <a href="https://history.state.gov/search/tips">history.state.gov/search/tips</a>.</p>
         <form class="form-inline" action="{$fd:app-base}" method="get">
+            <h4 class="bg-info">1. Enter a date to find documents from that date. Specifying a time is optional.</h4>
             <div class="form-group">
-                <label for="date" class="control-label">Date</label>
+                <label for="start-date" class="control-label">Start Date</label>
                 <input type="date" name="start-date" id="start-date" class="form-control" value="{$start-date}"/>
             </div>
             <div class="form-group">
-                <label for="time" class="control-label">Time</label>
+                <label for="start-time" class="control-label">Time</label>
                 <input type="time" name="start-time" id="start-time" class="form-control" value="{$start-time}"/>
             </div>
-            <br/>
+            <h4 class="bg-info">2: Optionally, specify an “end date” to extend your search across a range of dates. Otherwise, the search will return documents from just the “start date.”</h4>
             <div class="form-group">
-                <label for="end-date" class="control-label">End (optional)</label>
+                <label for="end-date" class="control-label">End Date</label>
                 <input type="date" name="end-date" id="end-date" class="form-control" value="{$end-date}"/>
             </div>
             <div class="form-group">
-                <label for="end-time" class="control-label">Time</label>
+                <label for="end-time" class="control-label">Time (optional)</label>
                 <input type="time" name="end-time" id="end-time" class="form-control" value="{$end-time}"/>
             </div>
-            <br/>
+            <h4 class="bg-info">3. Optionally, enter keywords to target specific topics or terms.</h4>
             <div class="form-group">
                 <label for="q" class="control-label">Keyword</label>
                 <input type="text" name="q" id="q" class="form-control" value="{$q}"/>
@@ -171,13 +172,13 @@ let $content :=
                         let $placeName-string := $placeName//text()[not(./ancestor::tei:note)] => string-join() => normalize-space()
                         return
                             <div>
-                                <p>{$start + $n - 1}. <a href="{$vol-id || "/" || $doc-id}">{$heading-stripped}</a></p>
-                                <ul>
-                                    <li>{$date-string}</li>
-                                    <li>{$placeName-string}</li>
-                                    <li>Machine-Readable Date: <code>{serialize(element date {$date/@*})}</code></li>
-                                    <li>Document ID: {$vol-id/string()}/{$doc-id/string()}</li>
-                                </ul>
+                                <p>{$start + $n - 1}. <a href="https://history.state.gov/historicaldocuments/{$vol-id || "/" || $doc-id}">{$heading-stripped}</a></p>
+                                <dl class="dl-horizontal">
+                                    <dt>Recorded Date</dt><dd>{$date-string}</dd>
+                                    <dt>Recorded Location</dt><dd>{$placeName-string}</dd>
+                                    <dt>Encoded Date</dt><dd><code>{serialize(element date {$date/@*})}</code></dd>
+                                    <dt>Document ID</dt><dd>{$vol-id/string()}/{$doc-id/string()}</dd>
+                                </dl>
                             </div>
                     }
                     <p>{ $link-to-next }</p>
