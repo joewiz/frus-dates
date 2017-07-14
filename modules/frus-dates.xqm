@@ -14,6 +14,8 @@ declare function fd:normalize-low($date as xs:string, $timezone as xs:dayTimeDur
             let $adjusted-date := adjust-date-to-timezone(xs:date($date), $timezone)
             return
                 substring($adjusted-date, 1, 10) || 'T00:00:00' || substring($adjusted-date, 11)
+        else if (matches($date, '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$')) then
+            adjust-dateTime-to-timezone(xs:dateTime($date || ':00'), $timezone)
         else if (matches($date, '^\d{4}-\d{2}$')) then
             adjust-dateTime-to-timezone(xs:dateTime($date || '-01T00:00:00'), $timezone)
         else (: if (matches($date, '^\d{4}$')) then :)
@@ -30,6 +32,10 @@ declare function fd:normalize-high($date as xs:string, $timezone as xs:dayTimeDu
             let $adjusted-date := adjust-date-to-timezone(xs:date($date), $timezone)
             return
                 substring($adjusted-date, 1, 10) || 'T23:59:59' || substring($adjusted-date, 11)
+        else if (matches($date, '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$')) then
+            adjust-dateTime-to-timezone(xs:dateTime($date || ':59'), $timezone)
+        else if (matches($date, '^\d{4}-\d{2}$')) then
+            adjust-dateTime-to-timezone(xs:dateTime($date || '-' || functx:days-in-month($date || '-01') || 'T23:59:59'), $timezone)
         else if (matches($date, '^\d{4}-\d{2}$')) then
             adjust-dateTime-to-timezone(xs:dateTime($date || '-' || functx:days-in-month($date || '-01') || 'T23:59:59'), $timezone)
         else (: if (matches($date, '^\d{4}$')) then :)
