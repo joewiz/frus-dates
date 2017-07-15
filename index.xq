@@ -91,7 +91,7 @@ let $content :=
                 <label for="start-time" class="control-label">Time</label>
                 <input type="time" name="start-time" id="start-time" class="form-control" value="{$start-time}"/>
             </div>
-            <h4 class="bg-info">2: Optionally, specify an “end date” to extend your search across a range of dates. Otherwise, the search will return documents from just the “start date.”</h4>
+            <h4 class="bg-info">2. Optionally, specify an “end date” to extend your search across a range of dates. Otherwise, the search will return documents from just the “start date.”</h4>
             <div class="form-group">
                 <label for="end-date" class="control-label">End Date</label>
                 <input type="date" name="end-date" id="end-date" class="form-control" value="{$end-date}"/>
