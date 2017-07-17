@@ -22,6 +22,7 @@ let $start-time := request:get-parameter("start-time", ())
 let $end-date := request:get-parameter("end-date", ())
 let $end-time := request:get-parameter("end-time", ())
 let $q := request:get-parameter("q", ())[. ne ""]
+let $order-by := request:get-parameter("order-by", "date")
 let $start := request:get-parameter("start", 1) cast as xs:integer
 let $per-page := request:get-parameter("per-page", 10) cast as xs:integer
 let $query-start := util:system-time()
@@ -58,9 +59,14 @@ let $hits :=
     else 
         ()
 let $ordered-hits := 
-    for $doc in $hits
-    order by $doc/@frus:doc-dateTime-min
-    return $doc
+    if ($q ne '' and $order-by eq 'relevance') then
+        for $doc in $hits
+        order by ft:score($doc) descending
+        return $doc
+    else
+        for $doc in $hits
+        order by $doc/@frus:doc-dateTime-min
+        return $doc
 let $query-end := util:system-time()
 let $query-duration := ($query-end - $query-start) div xs:dayTimeDuration("PT1S") || "s"
 let $end := $start + $per-page - 1
@@ -100,10 +106,20 @@ let $content :=
                 <label for="end-time" class="control-label">Time (optional)</label>
                 <input type="time" name="end-time" id="end-time" class="form-control" value="{$end-time}"/>
             </div>
-            <h4 class="bg-info">3. Optionally, enter keywords to target specific topics or terms.</h4>
+            <h4 class="bg-info">3. Optionally, enter keywords to target specific topics or terms. Results of keyword searches can be sorted in chronological order or "relevance" order.</h4>
             <div class="form-group">
                 <label for="q" class="control-label">Keyword</label>
                 <input type="text" name="q" id="q" class="form-control" value="{$q}"/>
+            </div>
+            <div class="radio">
+                <label class="radio-inline">
+                    <input type="radio" name="order-by" id="order-by-date" class="form-control" value="date"/>{if ($q ne "" and $order-by eq "date") then attribute checked {"checked"} else () }
+                    Sort by Date
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="order-by" id="order-by-relevance" class="form-control" value="relevance"/>{if ($q ne "" and $order-by eq "relevance") then attribute checked {"checked"} else () }
+                    Sort by Relevance
+                </label>
             </div>
             <br/>
             <button type="submit" class="btn btn-default">Submit</button>
@@ -146,7 +162,7 @@ let $content :=
                                     $q-summary
                                 else ()
                                 , 
-                                ", sorted in chronological order. "
+                                ", sorted ", if ($order-by eq 'date') then 'chronologically. ' else 'by relevance. '
                                 ,
                                 $link-to-next
                             )
@@ -181,6 +197,7 @@ let $content :=
                                     <dt>Recorded Location</dt><dd>{$placeName-string}</dd>
                                     <dt>Encoded Date</dt><dd><code>{serialize(element date {$date/@*})}</code></dd>
                                     <dt>Document ID</dt><dd>{$vol-id/string()}/{$doc-id/string()}</dd>
+                                    { if ($q ne '') then (<dt>Keyword Relevance</dt>, <dd>{ft:score($doc)}</dd>) else () }
                                 </dl>
                             </div>
                     }
