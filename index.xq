@@ -71,15 +71,32 @@ let $query-end := util:system-time()
 let $query-duration := ($query-end - $query-start) div xs:dayTimeDuration("PT1S") || "s"
 let $end := $start + $per-page - 1
 let $hits-to-show := subsequence($ordered-hits, $start, $per-page)
+let $hit-count := count($hits)
+let $remaining := $hit-count - $end
+let $link-to-previous := 
+    if ($start ge $per-page) then
+        <a href="{
+            let $url := request:get-query-string()
+            return
+                if (matches($url, "start=\d")) then
+                    "?" || replace($url, "start=\d+", "start=" || $start - $per-page)
+                else 
+                    "?" || $url || "&amp;start=" || $start - $per-page
+        }">{"Previous " || $per-page || " results."}</a>
+    else
+        ()
 let $link-to-next := 
-    <a href="{
-        let $url := request:get-query-string()
-        return
-            if (matches($url, "start=\d")) then
-                "?" || replace($url, "start=\d+", "start=" || $end + 1)
-            else 
-                "?" || $url || "&amp;start=" || $end + 1
-    }">Next {$per-page} results.</a>
+    if ($hit-count gt $end) then
+        <a href="{
+            let $url := request:get-query-string()
+            return
+                if (matches($url, "start=\d")) then
+                    "?" || replace($url, "start=\d+", "start=" || $end + 1)
+                else 
+                    "?" || $url || "&amp;start=" || $end + 1
+        }">{if ($remaining le $per-page) then "Final " || $remaining || " results." else "Next " || $per-page || " results."}</a>
+    else
+        ()
 let $content :=
     <div>
         <p>Since its launch, the <em>FRUS</em> digital archive offered series-wide full-text search, but it lacked date-based search or chronological sorting of search results. This was a highly requested feature, but without reliable machine-readable dates, it was technically infeasible. Instead, we defered this feature and focused on other goals—most importantly, completing the digitization of the print archive. Now, with over 400 of the 550+ volumes digitized in TEI XML, we now have a representative sample of the variety of document dates in <em>FRUS</em> suitable for thorough review and analysis.</p>
@@ -130,7 +147,7 @@ let $content :=
                 (
                 <hr/>,
                 <div>
-                    <p>Search completed in {$query-duration}. Showing {format-number($start, "#,###.##")}-{format-number($end, "#,###.##")} of {format-number(count($hits), "#,###.##")} documents {
+                    <p>Search completed in {$query-duration}. Showing {format-number($start, "#,###.##")}-{format-number($end, "#,###.##")} of {format-number($hit-count, "#,###.##")} documents {
                         let $date-summary := 
                             if (exists($range-start) and exists($range-end)) then 
                                 (
@@ -164,7 +181,7 @@ let $content :=
                                 , 
                                 ", sorted ", if ($order-by eq 'date') then 'chronologically. ' else 'by relevance. '
                                 ,
-                                $link-to-next
+                                $link-to-previous, " ", $link-to-next
                             )
                     }</p>
                     {
@@ -201,7 +218,7 @@ let $content :=
                                 </dl>
                             </div>
                     }
-                    <p>{ $link-to-next }</p>
+                    <p>{ $link-to-previous, " ", $link-to-next }</p>
                 </div>
                 )
             else if ($start-date or $end-date or $q) then
