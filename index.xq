@@ -199,6 +199,8 @@ let $content :=
                         let $heading-stripped := 
                             if (matches($heading-string, ('^' || $doc/@n || '\.'))) then 
                                 replace($heading-string, '^' || $doc/@n || '\.\s+(.+)$', '$1') 
+                            else if (matches($heading-string, ('^No\. ' || $doc/@n || '[^\d]'))) then 
+                                replace($heading-string, '^No\. ' || $doc/@n || '(.+)$', '$1') 
                             else 
                                 $heading-string
                         let $dateline := ($doc//tei:dateline[.//tei:date])[1]
