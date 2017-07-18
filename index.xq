@@ -14,9 +14,9 @@ declare option output:media-type "text/html";
 let $title := "FRUS Dates Proof of Concept"
 let $doc-count := 233686
     (:count(collection("/db/apps/frus/volumes")//tei:div[@type="document"]):)
-let $dated-doc-count := 220949
+let $dated-doc-count := 222534
     (:count(collection("/db/apps/frus/volumes")//tei:div[@type="document"][@frus:doc-dateTime-min]):)
-let $docs-counted-date := xs:date("2017-07-14")
+let $docs-counted-date := xs:date("2017-07-18")
 let $start-date := request:get-parameter("start-date", ())
 let $start-time := request:get-parameter("start-time", ())
 let $end-date := request:get-parameter("end-date", ())
