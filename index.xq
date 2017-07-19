@@ -69,9 +69,9 @@ let $ordered-hits :=
         return $doc
 let $query-end := util:system-time()
 let $query-duration := ($query-end - $query-start) div xs:dayTimeDuration("PT1S") || "s"
-let $end := $start + $per-page - 1
-let $hits-to-show := subsequence($ordered-hits, $start, $per-page)
 let $hit-count := count($hits)
+let $end := min(($start + $per-page - 1, $hit-count))
+let $hits-to-show := subsequence($ordered-hits, $start, $per-page)
 let $remaining := $hit-count - $end
 let $link-to-previous := 
     if ($start ge $per-page) then
