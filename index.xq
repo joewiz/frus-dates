@@ -16,6 +16,26 @@ let $doc-count := 233686
     (:count(collection("/db/apps/frus/volumes")//tei:div[@type="document"]):)
 let $dated-doc-count := 222534
     (:count(collection("/db/apps/frus/volumes")//tei:div[@type="document"][@frus:doc-dateTime-min]):)
+let $oldest := 
+    xs:dateTime("1865-04-01T00:00:00+00:09")
+    (:
+    subsequence(
+        for $date in collection("/db/apps/frus/volumes")//tei:div[@type="document"]/@frus:doc-dateTime-min
+        order by $date
+        return
+            $date
+        , 1, 1)
+    :)
+let $newest := 
+    xs:dateTime("1989-01-08T16:05:00Z")
+    (:
+    subsequence(
+        for $date in collection("/db/apps/frus/volumes")//tei:div[@type="document"]/@frus:doc-dateTime-max
+        order by $date descending
+        return
+            $date
+        , 1, 1)
+    :)
 let $docs-counted-date := xs:date("2017-07-18")
 let $start-date := request:get-parameter("start-date", ())
 let $start-time := request:get-parameter("start-time", ())
@@ -104,6 +124,7 @@ let $content :=
         Now, we are preparing to integrate this data into the history.state.gov’s search interface. This page is an early attempt at demonstrating the viability of querying the dates. Please give it a try and <a href="https://history.state.gov/about/contact-us">let us know</a> what you think.</p>
         <p>To get started, click on one of the following example queries to see the results: <a href="?start-date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; <a href="?start-date=1974-08-09&amp;start-time=10:00&amp;end-date=1974-08-09&amp;end-time=20:00">August 9, 1974, 10 a.m.–8 p.m.</a>; <a href="?start-date=1977-01-20&amp;end-date=1981-01-20&amp;q=""human+rights""">“Human Rights” during the Carter administration</a>.</p>
         <p>To craft your own query, enter either a single date to find documents from that date, or use two dates to search for all documents between those dates (inclusive). Times can be added for more precision. (A note on time zones: Unless otherwise specified, your query is assumed to be in US Eastern time, though you may experience some slight timezone misalignment that we are investigating.) You can also add a keyword to your search, using the same syntax as described on <a href="https://history.state.gov/search/tips">history.state.gov/search/tips</a>.</p>
+        <p>As of {format-date($docs-counted-date, '[MNn] [D], [Y0001]', 'en', (), 'US')}, these documents span the ~{year-from-dateTime($newest) - year-from-dateTime($oldest)} year period between {format-date($oldest, '[MNn] [D], [Y0001]', 'en', (), 'US')} and {format-date($newest, '[MNn] [D], [Y0001]', 'en', (), 'US')}.</p>
         <p><strong>Note:</strong> Unless you are running Google Chrome, please enter dates below in the format <code>YYYY-MM-DD</code> and times in the format <code>HH:MM</code> (using 24-hour time). In Google Chrome, you will be presented with a more user friendly interface.</p>
         <form class="form-inline" action="{$fd:app-base}" method="get">
             <h4 class="bg-info">1. Enter a date to find documents from that date. Specifying a time is optional.</h4>
