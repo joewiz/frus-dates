@@ -75,7 +75,7 @@ let $hits :=
     else if (exists($range-start) and exists($range-end)) then
         collection("/db/apps/frus/volumes")//tei:div[@frus:doc-dateTime-min ge $range-start and @frus:doc-dateTime-max le $range-end]
     else if (exists($q)) then
-        collection("/db/apps/frus/volumes")//tei:div[ft:query(., $q)]
+        collection("/db/apps/frus/volumes")//tei:div[@type="document"][ft:query(., $q)]
     else 
         ()
 let $ordered-hits := 
