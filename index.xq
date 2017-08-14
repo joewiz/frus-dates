@@ -12,9 +12,9 @@ declare option output:method "html5";
 declare option output:media-type "text/html";
 
 let $title := "FRUS Dates Proof of Concept"
-let $doc-count := 233687
+let $doc-count := 233684
     (:count(collection("/db/apps/frus/volumes")//tei:div[@type="document"]):)
-let $dated-doc-count := 222573
+let $dated-doc-count := 222891
     (:count(collection("/db/apps/frus/volumes")//tei:div[@type="document"][@frus:doc-dateTime-min]):)
 let $oldest := 
     xs:dateTime("1865-03-31T23:51:00Z")
@@ -36,7 +36,7 @@ let $newest :=
             $date
         , 1, 1)
     :)
-let $docs-counted-date := xs:date("2017-07-24")
+let $docs-counted-date := xs:date("2017-08-14")
 let $start-date := request:get-parameter("start-date", ())
 let $start-time := request:get-parameter("start-time", ())
 let $end-date := request:get-parameter("end-date", ())
