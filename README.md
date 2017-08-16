@@ -22,3 +22,4 @@ Date reconciliation still in process.
 - Run `ant`
 - Upload build/frus-dates-0.1.xar to eXist-db's Dashboard > Package Manager
 - Open http://localhost:8080/exist/apps/frus-dates
+- Enjoy!
