@@ -12,31 +12,41 @@ declare option output:method "html5";
 declare option output:media-type "text/html";
 
 let $title := "FRUS Dates Proof of Concept"
-let $doc-count := 233684
-    (:count(collection("/db/apps/frus/volumes")//tei:div[@type="document"]):)
-let $dated-doc-count := 222891
-    (:count(collection("/db/apps/frus/volumes")//tei:div[@type="document"][@frus:doc-dateTime-min]):)
+let $doc-count := 
+    260852
+    (:
+    count(collection("/db/apps/frus/volumes")//tei:div[@type="document"])
+    :)
+let $dated-doc-count := 
+    251124
+    (:
+    count(collection("/db/apps/frus/volumes")//tei:div[@frus:doc-dateTime-min])
+    :)
 let $oldest := 
-    xs:dateTime("1865-03-31T23:51:00Z")
+    xs:dateTime("1865-03-31T18:51:00-05:00")
     (:
     subsequence(
-        for $date in collection("/db/apps/frus/volumes")//tei:div[@type="document"]/@frus:doc-dateTime-min
-        order by $date
+        for $date in collection("/db/apps/frus/volumes")//tei:div/@frus:doc-dateTime-min
+        order by sort:index("doc-dateTime-min-asc", $date)
         return
             $date
-        , 1, 1)
+        , 1, 1) cast as xs:dateTime
     :)
 let $newest := 
-    xs:dateTime("1989-01-08T16:05:00Z")
+    xs:dateTime("1989-01-08T16:05:00-05:00")
     (:
     subsequence(
-        for $date in collection("/db/apps/frus/volumes")//tei:div[@type="document"]/@frus:doc-dateTime-max
-        order by $date descending
+        for $date in collection("/db/apps/frus/volumes")//tei:div/@frus:doc-dateTime-max
+        order by sort:index("doc-dateTime-max-desc", $date)
         return
             $date
-        , 1, 1)
+        , 1, 1) cast as xs:dateTime
     :)
-let $docs-counted-date := xs:date("2017-08-14")
+let $docs-counted-date := xs:date("2017-12-09")
+let $fulltext-digitized-count := 
+    count(collection("/db/apps/frus/volumes")/tei:TEI/tei:text/tei:body[tei:div])
+let $published-print-count := 
+    count(collection("/db/apps/frus/bibliography")/volume[publication-status eq "published"])
 let $start-date := request:get-parameter("start-date", ())
 let $start-time := request:get-parameter("start-time", ())
 let $end-date := request:get-parameter("end-date", ())
@@ -83,13 +93,13 @@ let $hits :=
         ()
 let $ordered-hits := 
     if ($q ne '' and $order-by eq 'relevance') then
-        for $doc in $hits
-        order by ft:score($doc) descending
-        return $doc
+        for $hit in $hits
+        order by ft:score($hit) descending
+        return $hit
     else
-        for $doc in $hits
-        order by $doc/@frus:doc-dateTime-min
-        return $doc
+        for $hit in $hits
+        order by sort:index("doc-dateTime-min-asc", $hit/@frus:doc-dateTime-min)
+        return $hit
 let $query-end := util:system-time()
 let $query-duration := ($query-end - $query-start) div xs:dayTimeDuration("PT1S") || "s"
 let $hit-count := count($hits)
@@ -122,13 +132,13 @@ let $link-to-next :=
         ()
 let $content :=
     <div>
-        <p>Since its launch, the <em>FRUS</em> digital archive offered series-wide full-text search, but it lacked date-based search or chronological sorting of search results. This was a highly requested feature, but without reliable machine-readable dates, it was technically infeasible. Instead, we defered this feature and focused on other goals—most importantly, completing the digitization of the print archive. Now, with over 400 of the 550+ volumes digitized in TEI XML, we now have a representative sample of the variety of document dates in <em>FRUS</em> suitable for thorough review and analysis.</p>
+        <p>Since its launch, the <em>FRUS</em> digital archive offered series-wide full-text search, but it lacked date-based search or chronological sorting of search results. This was a highly requested feature, but without reliable machine-readable dates, it was technically infeasible. Instead, we defered this feature and focused on other goals—most importantly, completing the digitization of the print archive. Now, with {$fulltext-digitized-count} of the {$published-print-count} published <em>FRUS</em> volumes encoded in TEI XML, we now have a representative sample of the variety of document dates in <em>FRUS</em> suitable for thorough review and analysis.</p>
         <p>In October 2016 the Office’s digital initiatives team launched a project to review dates across the series. In July 2017 the project achieved a major milestone: the completion of dates in all <em>FRUS</em> volumes released before 2017. Now, as of {format-date($docs-counted-date, '[MNn] [D], [Y0001]', 'en', (), 'US')}, {format-number($dated-doc-count, "#,###.##")} of the {format-number($doc-count, "#,###.##")} documents ({round($dated-doc-count div $doc-count * 1000) div 10}% of the archive) contain machine-readable dates in a format suitable for date-based searching and sorting. (Research on the remaining {format-number($doc-count - $dated-doc-count, "#,###.##")} documents is ongoing.) 
         Now, we are preparing to integrate this data into the history.state.gov’s search interface. This page is an early attempt at demonstrating the viability of querying the dates. Please give it a try and <a href="https://history.state.gov/about/contact-us">let us know</a> what you think.</p>
         <p>To get started, click on one of the following example queries to see the results: <a href="?start-date=1941-12-07">December 7, 1941</a>; <a href="?start-date=1969-01-20&amp;end-date=1974-08-09">the Nixon administration</a>; <a href="?start-date=1974-08-09&amp;start-time=10:00&amp;end-date=1974-08-09&amp;end-time=20:00">August 9, 1974, 10 a.m.–8 p.m.</a>; <a href="?start-date=1977-01-20&amp;end-date=1981-01-20&amp;q=""human+rights""">“Human Rights” during the Carter administration</a>.</p>
         <p>To craft your own query, enter either a single date to find documents from that date, or use two dates to search for all documents between those dates (inclusive). Times can be added for more precision. (A note on time zones: Unless otherwise specified, your query is assumed to be in US Eastern time, though you may experience some slight timezone misalignment that we are investigating.) You can also add a keyword to your search, using the same syntax as described on <a href="https://history.state.gov/search/tips">history.state.gov/search/tips</a>.</p>
         <p>As of {format-date($docs-counted-date, '[MNn] [D], [Y0001]', 'en', (), 'US')}, these documents span the ~{year-from-dateTime($newest) - year-from-dateTime($oldest)} year period between {format-date($oldest, '[MNn] [D], [Y0001]', 'en', (), 'US')} and {format-date($newest, '[MNn] [D], [Y0001]', 'en', (), 'US')}.</p>
-        <p><strong>Note:</strong> Unless you are running Google Chrome, please enter dates below in the format <code>YYYY-MM-DD</code> and times in the format <code>HH:MM</code> (using 24-hour time). In Google Chrome, you will be presented with a more user friendly interface.</p>
+        <p><strong>Note:</strong> Unless you are running Google Chrome or Mobile Safari, please enter dates below in the format <code>YYYY-MM-DD</code> and times in the format <code>HH:MM</code> (using 24-hour time). In Google Chrome or Mobile Safari, you will be presented with a more user friendly interface.</p>
         <form class="form-inline" action="{$fd:app-base}" method="get">
             <h4 class="bg-info">1. Enter a date to find documents from that date. Specifying a time is optional.</h4>
             <div class="form-group">
