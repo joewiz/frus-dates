@@ -141,7 +141,7 @@ let $cache-max-age := xs:dayTimeDuration("PT1M")
 let $purge := 
     if (current-dateTime() - $cache?purged gt $cache-max-age) then
         (: until map:remove is fixed, we'll just blow away the cache :)
-        cache:clear()
+        cache:clear($cache-name)
         (:
         let $entries-to-purge := $cache?*[?created + $cache-max-age gt current-dateTime()]?id
         let $purged := map:remove($cache-value, $entries-to-purge)
