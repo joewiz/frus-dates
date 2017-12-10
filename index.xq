@@ -82,29 +82,81 @@ let $range-end :=
     else
         ()
 let $log := console:log("starting search for " || " start-date=" || $start-date || " (range-start=" || $range-start || ") end-date=" || $end-date || " (range-end=" || $range-end || ") q=" || $q)
+
+(: prepare a unique key for the present query, so we can cache the hits to improve the result of subsequent requests for it or pages thereof :)
+let $normalized-query-string := 
+    (
+        for $param in request:get-parameter-names()[not(. = ("start", "per-page"))]
+        let $val := request:get-parameter($param, ())
+        order by $param
+        return
+            $param || "=" || $val
+    )
+    => string-join("&amp;")
+let $query-id := util:hash($normalized-query-string, "sha1")
+let $cache-name := "frus-dates-search"
+let $cache-key := "queries"
+let $cache := cache:get($cache-name, $cache-key)
+let $cache := if (exists($cache)) then $cache else map { "created": current-dateTime(), "purged": current-dateTime() }
+
+(: retrieve the hits from the cache, or populate the cache with the hits :)
+let $cached-query := if (map:contains($cache, $query-id)) then map:get($cache, $query-id) else ()
 let $hits :=
-    if (exists($range-start) and exists($range-end) and exists($q)) then
-        collection("/db/apps/frus/volumes")//tei:div[@frus:doc-dateTime-min ge $range-start and @frus:doc-dateTime-max le $range-end][ft:query(., $q)]
-    else if (exists($range-start) and exists($range-end)) then
-        collection("/db/apps/frus/volumes")//tei:div[@frus:doc-dateTime-min ge $range-start and @frus:doc-dateTime-max le $range-end]
-    else if (exists($q)) then
-        collection("/db/apps/frus/volumes")//tei:div[@type="document"][ft:query(., $q)]
-    else 
-        ()
-let $ordered-hits := 
-    if ($q ne '' and $order-by eq 'relevance') then
-        for $hit in $hits
-        order by ft:score($hit) descending
-        return $hit
+    if (exists($cached-query)) then
+        $cached-query?hits
     else
-        for $hit in $hits
-        order by sort:index("doc-dateTime-min-asc", $hit/@frus:doc-dateTime-min)
-        return $hit
+        let $results := 
+            if (exists($range-start) and exists($range-end) and exists($q)) then
+                collection("/db/apps/frus/volumes")//tei:div[@frus:doc-dateTime-min ge $range-start and @frus:doc-dateTime-max le $range-end][ft:query(., $q)]
+            else if (exists($range-start) and exists($range-end)) then
+                collection("/db/apps/frus/volumes")//tei:div[@frus:doc-dateTime-min ge $range-start and @frus:doc-dateTime-max le $range-end]
+            else if (exists($q)) then
+                collection("/db/apps/frus/volumes")//tei:div[@type="document"][ft:query(., $q)]
+            else 
+                ()
+        let $ordered := 
+            if ($q ne '' and $order-by eq 'relevance') then
+                for $hit in $results
+                order by ft:score($hit) descending
+                return $hit
+            else
+                for $hit in $results
+                order by sort:index("doc-dateTime-min-asc", $hit/@frus:doc-dateTime-min)
+                return $hit
+        let $new := 
+            map:entry($query-id, 
+                map { 
+                    "id": $query-id,
+                    "query": $normalized-query-string,
+                    "created": current-dateTime(),
+                    "hits": $ordered
+                }
+            )
+        let $put := cache:put($cache-name, $cache-key, map:merge(($cache, $new)))
+        return
+            $ordered
+
+(: purge cache :)
+let $cache-max-age := xs:dayTimeDuration("PT1M")
+let $purge := 
+    if (current-dateTime() - $cache?purged gt $cache-max-age) then
+        (: until map:remove is fixed, we'll just blow away the cache :)
+        cache:clear()
+        (:
+        let $entries-to-purge := $cache?*[?created + $cache-max-age gt current-dateTime()]?id
+        let $purged := map:remove($cache-value, $entries-to-purge)
+        let $new := map:merge(($purged, $cache?created, map:entry("purged": current-dateTime()))
+        return
+            cache:put($cache-name, $cache-key, $new)
+        :)
+    else
+        ()
+
 let $query-end := util:system-time()
 let $query-duration := ($query-end - $query-start) div xs:dayTimeDuration("PT1S") || "s"
 let $hit-count := count($hits)
 let $end := min(($start + $per-page - 1, $hit-count))
-let $hits-to-show := subsequence($ordered-hits, $start, $per-page)
+let $hits-to-show := subsequence($hits, $start, $per-page)
 let $remaining := $hit-count - $end
 let $link-to-previous := 
     if ($start ge $per-page) then
