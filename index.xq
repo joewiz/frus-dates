@@ -184,6 +184,13 @@ let $link-to-next :=
         ()
 let $content :=
     <div>
+        <p class="lead">Thanks to your help, the Office of the Historian web page’s new search interface supports date search, along with other new features not found here. This page continues to work, but at some point soon links here will be start being redirected to the new search engine.</p>
+        <p class="text-center">{
+            if ($hits) then
+                <a class="btn btn-primary" href="https://history.state.gov/search?{request:get-query-string()}">Move this search over to the new search engine</a>
+            else
+                <a class="btn btn-primary" href="https://history.state.gov/search?within=documents">Take me to the new search engine</a>
+        }</p>
         <p>Since its launch, the <em>FRUS</em> digital archive offered series-wide full-text search, but it lacked date-based search or chronological sorting of search results. This was a highly requested feature, but without reliable machine-readable dates, it was technically infeasible. Instead, we defered this feature and focused on other goals—most importantly, completing the digitization of the print archive. Now, with {$fulltext-digitized-count} of the {$published-print-count} published <em>FRUS</em> volumes encoded in TEI XML, we now have a representative sample of the variety of document dates in <em>FRUS</em> suitable for thorough review and analysis.</p>
         <p>In October 2016 the Office’s digital initiatives team launched a project to review dates across the series. In July 2017 the project achieved a major milestone: the completion of dates in all <em>FRUS</em> volumes released before 2017. Now, as of {format-date($docs-counted-date, '[MNn] [D], [Y0001]', 'en', (), 'US')}, {format-number($dated-doc-count, "#,###.##")} of the {format-number($doc-count, "#,###.##")} documents ({round($dated-doc-count div $doc-count * 1000) div 10}% of the archive) contain machine-readable dates in a format suitable for date-based searching and sorting. (Research on the remaining {format-number($doc-count - $dated-doc-count, "#,###.##")} documents is ongoing.) 
         Now, we are preparing to integrate this data into the history.state.gov’s search interface. This page is an early attempt at demonstrating the viability of querying the dates. Please give it a try and <a href="https://history.state.gov/about/contact-us">let us know</a> what you think.</p>
