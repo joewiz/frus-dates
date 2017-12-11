@@ -187,7 +187,7 @@ let $content :=
         <p class="lead">Thanks to your help, the Office of the Historian web page’s new search interface supports date search, along with other new features not found here. This page continues to work, but at some point soon links here will be start being redirected to the new search engine.</p>
         <p class="text-center">{
             if ($hits) then
-                <a class="btn btn-primary" href="https://history.state.gov/search?{request:get-query-string()}">Move this search over to the new search engine</a>
+                <a class="btn btn-primary" href="https://history.state.gov/search?{request:get-query-string()}&amp;within=documents">Move this search over to the new search engine</a>
             else
                 <a class="btn btn-primary" href="https://history.state.gov/search?within=documents">Take me to the new search engine</a>
         }</p>
